@@ -41,20 +41,21 @@ jobs:
             -b gki-android15-6.6 \
             ../susfs4ksu
 
-          # Copy files
+          # Find the actual patch filename
+          PATCH=$(ls ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel*.patch)
+          echo "Found patch: $PATCH"
+
           cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch \
             common/KernelSU/
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-gki-android15-6.6.patch \
-            common/
+          cp $PATCH common/
           cp ../susfs4ksu/kernel_patches/fs/* common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
 
-          # Apply patches
           cd common/KernelSU
           patch -p1 < 10_enable_susfs_for_ksu.patch || true
 
           cd ../
-          patch -p1 < 50_add_susfs_in_kernel-gki-android15-6.6.patch || true
+          patch -p1 < $(basename $PATCH) || true
 
       - name: Build kernel
         run: |
