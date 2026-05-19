@@ -1,0 +1,73 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison flex libssl-dev libelf-dev \
+            python3 python3-pip git curl zip unzip
+
+      - name: Apply YukiSU
+        run: |
+          cd common
+          curl -LSs "https://raw.githubusercontent.com/Anatdx/YukiSU/main/kernel/setup.sh" \
+            | bash -s main
+
+      - name: Apply SUSFS
+        run: |
+          git clone --depth=1 \
+            https://gitlab.com/simonpunk/susfs4ksu.git \
+            -b gki-android15-6.6 \
+            ../susfs4ksu
+
+          # Copy files
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch \
+            common/KernelSU/
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-gki-android15-6.6.patch \
+            common/
+          cp ../susfs4ksu/kernel_patches/fs/* common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
+
+          # Apply patches
+          cd common/KernelSU
+          patch -p1 < 10_enable_susfs_for_ksu.patch || true
+
+          cd ../
+          patch -p1 < 50_add_susfs_in_kernel-gki-android15-6.6.patch || true
+
+      - name: Build kernel
+        run: |
+          tools/bazel build \
+            --config=fast \
+            --lto=thin \
+            //common:kernel_aarch64_dist
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 \
+            https://github.com/osm0sis/AnyKernel3 \
+            AnyKernel3
+          cp bazel-bin/common/kernel_aarch64/Image AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../kernel-onyx.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-onyx
+          path: kernel-onyx.zip
+          retention-days: 7
