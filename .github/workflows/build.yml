@@ -15,7 +15,7 @@ jobs:
         with:
           submodules: false
 
-          - name: Clone common kernel
+      - name: Clone common kernel
         run: |
           git clone --depth=1 \
             https://android.googlesource.com/kernel/common \
