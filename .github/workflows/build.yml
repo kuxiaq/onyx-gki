@@ -29,11 +29,11 @@ jobs:
             python3 python3-pip git curl zip unzip clang llvm lld \
             binutils-aarch64-linux-gnu
 
-      - name: Apply YukiSU
+      - name: Apply SukiSU
         run: |
           cd common
-          curl -LSs "https://raw.githubusercontent.com/Anatdx/YukiSU/main/kernel/setup.sh" \
-            | bash -s main
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" \
+            | bash -s susfs-main
 
       - name: Configure kernel
         run: |
@@ -58,30 +58,6 @@ jobs:
           make ARCH=arm64 CC=clang LLVM=1 \
             CROSS_COMPILE=aarch64-linux-gnu- \
             O=out olddefconfig
-      - name: Apply SUSFS
-        run: |
-          git clone --depth=1 \
-            https://gitlab.com/simonpunk/susfs4ksu.git \
-            -b gki-android15-6.6 \
-            ../susfs4ksu
-
-          echo "=== Listing patch files ==="
-          ls ../susfs4ksu/kernel_patches/
-
-          PATCH=$(find ../susfs4ksu/kernel_patches/ -name "50_add_susfs*.patch" | head -1)
-          echo "Found patch: $PATCH"
-
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch \
-            common/KernelSU/
-          cp "$PATCH" common/
-          cp ../susfs4ksu/kernel_patches/fs/* common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
-
-          cd common/KernelSU
-          patch -p1 < 10_enable_susfs_for_ksu.patch || true
-
-          cd ../
-          patch -p1 < $(basename "$PATCH") || true
           
       - name: Build kernel
         run: |
