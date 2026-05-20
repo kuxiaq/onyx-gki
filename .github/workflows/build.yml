@@ -35,7 +35,7 @@ jobs:
           curl -LSs "https://raw.githubusercontent.com/Anatdx/YukiSU/main/kernel/setup.sh" \
             | bash -s main
 
-       - name: Configure kernel
+      - name: Configure kernel
         run: |
           cd common
           echo "CONFIG_KSU=y" >> arch/arm64/configs/gki_defconfig
