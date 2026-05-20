@@ -32,8 +32,7 @@ jobs:
       - name: Apply SukiSU
         run: |
           cd common
-          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" \
-            | bash -s susfs-main
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/su.sh" | bash -s susfs-main
 
       - name: Configure kernel
         run: |
@@ -53,30 +52,30 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> out/.config
           echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> out/.config
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> out/.config
-
+          
           # Resolve config dependencies
           make ARCH=arm64 CC=clang LLVM=1 \
             CROSS_COMPILE=aarch64-linux-gnu- \
             O=out olddefconfig
-          
+
       - name: Build kernel
         run: |
           cd common
-          make ARCH=arm64 CC=clang LLVM=1 \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            O=out gki_defconfig
           make ARCH=arm64 CC=clang LLVM=1 \
             CROSS_COMPILE=aarch64-linux-gnu- \
             O=out -j$(nproc)
 
       - name: Package with AnyKernel3
         run: |
-          git clone --depth=1 \
-            https://github.com/osm0sis/AnyKernel3 \
-            AnyKernel3
-          cp bazel-bin/common/kernel_aarch64/Image AnyKernel3/
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+          
+          # Copying the raw Image (standard for GKI architectures)
+          # If your branch builds compressed images, swap 'Image' to 'Image.gz' below
+          cp common/out/arch/arm64/boot/Image.gz AnyKernel3/
+          
+          # Compress the directory into the flashable zip expected by the upload step
           cd AnyKernel3
-          zip -r9 ../kernel-onyx.zip .
+          zip -r9 ../kernel-onyx.zip * -x .git* README.md
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
